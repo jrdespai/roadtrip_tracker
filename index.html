@@ -24,7 +24,7 @@
 
   <style>
     :root {
-      --header-height: 3.25rem;
+      --header-height: 4.75rem;
     }
 
     html, body {
@@ -61,6 +61,82 @@
     .location-marker--university {
       background: #1e3a8a;
     }
+
+    .location-marker--visited {
+      background: #9ca3af;
+      opacity: 0.35;
+    }
+
+    .leaflet-popup-content {
+      margin: 12px 14px;
+      min-width: 200px;
+    }
+
+    .location-popup__nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+      background: #1e40af;
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+    }
+
+    .location-popup__visited-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      margin-top: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .location-popup__visited-label input {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      accent-color: #f5c842;
+    }
+
+    .checklist-item--visited .checklist-item__name {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    .checklist-checkbox {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      accent-color: #f5c842;
+    }
+
+    #checklist-drawer {
+      transition: transform 0.3s ease;
+    }
+
+    #checklist-drawer.is-open {
+      transform: translateY(0);
+    }
+
+    #drawer-backdrop {
+      transition: opacity 0.3s ease;
+    }
+
+    #drawer-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .state-accordion summary::-webkit-details-marker {
+      display: none;
+    }
   </style>
 
   <style>
@@ -72,16 +148,62 @@
 </head>
 <body class="bg-gray-900">
 
-  <!-- Floating header -->
-  <header id="app-header" class="fixed top-0 left-0 right-0 z-[1000] flex items-center justify-center px-4
-                 bg-gray-900/70 backdrop-blur-sm border-b border-white/10 pointer-events-none"
+  <!-- Floating header with progress -->
+  <header id="app-header" class="fixed top-0 left-0 right-0 z-[1000] flex flex-col justify-center px-4
+                 bg-gray-900/80 backdrop-blur-sm border-b border-white/10 pointer-events-none"
           style="height: var(--header-height);">
-    <h1 class="text-lg font-semibold text-white tracking-wide drop-shadow-sm">
+    <h1 class="text-base font-semibold text-white tracking-wide drop-shadow-sm text-center">
       US Road Trip Explorer
     </h1>
+    <p id="progress-stats" class="text-xs text-gray-300 text-center mt-0.5">
+      0 / 0 Sites Visited &bull; 0%
+    </p>
+    <div class="w-full max-w-md mx-auto h-1.5 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
+      <div id="progress-fill" class="h-full bg-amber-400 rounded-full transition-all duration-300"
+           style="width: 0%"></div>
+    </div>
   </header>
 
   <div id="map"></div>
+
+  <!-- Checklist FAB -->
+  <button id="checklist-fab" type="button" aria-label="Open checklist"
+          class="fixed bottom-6 right-4 z-[1000] flex items-center justify-center
+                 w-14 h-14 rounded-full bg-amber-400 text-gray-900 shadow-lg
+                 active:scale-95 transition-transform">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+
+  <!-- Drawer backdrop -->
+  <div id="drawer-backdrop"
+       class="fixed inset-0 z-[1001] bg-black/50 opacity-0 pointer-events-none"
+       aria-hidden="true"></div>
+
+  <!-- Slide-up checklist drawer -->
+  <aside id="checklist-drawer"
+         class="fixed bottom-0 left-0 right-0 z-[1002] flex flex-col bg-gray-900 rounded-t-2xl
+                shadow-2xl border-t border-white/10 translate-y-full"
+         style="max-height: 75vh;"
+         aria-hidden="true">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+      <h2 class="text-lg font-semibold text-white">Trip Checklist</h2>
+      <button id="checklist-close" type="button" aria-label="Close checklist"
+              class="flex items-center justify-center w-11 h-11 rounded-full text-gray-300
+                     hover:bg-white/10 active:bg-white/20">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="checklist-content" class="flex-1 overflow-y-auto overscroll-contain px-2 pb-6">
+      <p class="text-gray-400 text-sm text-center py-8">Loading locations&hellip;</p>
+    </div>
+  </aside>
 
   <script>
     const KML_FILE = 'ChurchofJesusChristTemples (1).kml';
@@ -100,6 +222,14 @@
       Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA',
       Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY'
     };
+
+    const STATE_ABBR_TO_NAME = Object.fromEntries(
+      Object.entries(STATE_NAME_TO_ABBR).map(([name, abbr]) => [abbr, name])
+    );
+
+    const locationsById = new Map();
+    const markersById = new Map();
+    let allLocations = [];
 
     const map = L.map('map', {
       center: [39.8283, -98.5795],
@@ -125,6 +255,14 @@
 
     map.addLayer(markerClusterGroup);
 
+    const checklistFab = document.getElementById('checklist-fab');
+    const checklistDrawer = document.getElementById('checklist-drawer');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const checklistClose = document.getElementById('checklist-close');
+    const checklistContent = document.getElementById('checklist-content');
+    const progressStats = document.getElementById('progress-stats');
+    const progressFill = document.getElementById('progress-fill');
+
     function positionControlsBelowHeader() {
       const gap = 8;
       const top = document.getElementById('app-header').offsetHeight + gap;
@@ -135,6 +273,83 @@
 
     map.whenReady(positionControlsBelowHeader);
     window.addEventListener('resize', positionControlsBelowHeader);
+
+    function isVisited(id) {
+      return localStorage.getItem(id) === '1';
+    }
+
+    function setVisited(id, visited) {
+      if (visited) {
+        localStorage.setItem(id, '1');
+      } else {
+        localStorage.removeItem(id);
+      }
+    }
+
+    function updateProgressBar() {
+      const total = allLocations.length;
+      const visited = allLocations.filter((loc) => isVisited(loc.id)).length;
+      const pct = total > 0 ? ((visited / total) * 100).toFixed(1) : '0.0';
+      progressStats.textContent = `${visited} / ${total} Sites Visited \u2022 ${pct}%`;
+      progressFill.style.width = total > 0 ? `${(visited / total) * 100}%` : '0%';
+    }
+
+    function syncChecklistItem(id, visited) {
+      document.querySelectorAll(`[data-location-id="${id}"]`).forEach((el) => {
+        if (el.type === 'checkbox') {
+          el.checked = visited;
+        }
+        const row = el.closest('.checklist-item');
+        if (row) {
+          row.classList.toggle('checklist-item--visited', visited);
+        }
+      });
+    }
+
+    function updateMarkerVisitedState(id, visited) {
+      const location = locationsById.get(id);
+      const marker = markersById.get(id);
+      if (!location || !marker) {
+        return;
+      }
+      marker.setIcon(createLocationIcon(location.type, visited));
+      markerClusterGroup.refreshClusters(marker);
+    }
+
+    function setLocationVisited(id, visited) {
+      setVisited(id, visited);
+      updateMarkerVisitedState(id, visited);
+      syncChecklistItem(id, visited);
+      updateProgressBar();
+    }
+
+    function toggleLocationVisited(id) {
+      setLocationVisited(id, !isVisited(id));
+    }
+
+    function openChecklistDrawer() {
+      checklistDrawer.classList.add('is-open');
+      drawerBackdrop.classList.add('is-open');
+      checklistDrawer.setAttribute('aria-hidden', 'false');
+      drawerBackdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeChecklistDrawer() {
+      checklistDrawer.classList.remove('is-open');
+      drawerBackdrop.classList.remove('is-open');
+      checklistDrawer.setAttribute('aria-hidden', 'true');
+      drawerBackdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    checklistFab.addEventListener('click', () => {
+      if (checklistDrawer.classList.contains('is-open')) {
+        closeChecklistDrawer();
+      } else {
+        openChecklistDrawer();
+      }
+    });
+    checklistClose.addEventListener('click', closeChecklistDrawer);
+    drawerBackdrop.addEventListener('click', closeChecklistDrawer);
 
     function getElementsByLocalName(parent, localName) {
       return Array.from(parent.getElementsByTagName('*')).filter(
@@ -232,10 +447,15 @@
       return temples;
     }
 
-    function createLocationIcon(type) {
-      const className = type === 'temple'
-        ? 'location-marker location-marker--temple'
-        : 'location-marker location-marker--university';
+    function createLocationIcon(type, visited = false) {
+      let className;
+      if (visited) {
+        className = 'location-marker location-marker--visited';
+      } else {
+        className = type === 'temple'
+          ? 'location-marker location-marker--temple'
+          : 'location-marker location-marker--university';
+      }
 
       return L.divIcon({
         className: '',
@@ -245,13 +465,191 @@
       });
     }
 
+    function formatTypeLabel(type) {
+      return type === 'temple' ? 'Temple' : 'University';
+    }
+
+    function buildPopupContent(location) {
+      const visited = isVisited(location.id);
+      const navUrl = `http://maps.google.com/?q=${location.lat},${location.lng}`;
+      return `
+        <div class="location-popup">
+          <strong class="text-base text-gray-900">${escapeHtml(location.name)}</strong>
+          <p class="text-sm text-gray-600 mt-1">
+            ${escapeHtml(formatTypeLabel(location.type))} &middot;
+            ${escapeHtml(location.city)}, ${escapeHtml(location.state)}
+          </p>
+          <a class="location-popup__nav-btn" href="${navUrl}" target="_blank" rel="noopener noreferrer">
+            Navigate
+          </a>
+          <label class="location-popup__visited-label">
+            <input type="checkbox" data-location-id="${location.id}" ${visited ? 'checked' : ''}>
+            Mark as Visited
+          </label>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function bindPopupEvents(marker) {
+      marker.on('popupopen', (e) => {
+        const popup = e.popup.getElement();
+        if (!popup) {
+          return;
+        }
+        const checkbox = popup.querySelector('input[type="checkbox"][data-location-id]');
+        if (checkbox) {
+          checkbox.addEventListener('change', () => {
+            setLocationVisited(checkbox.dataset.locationId, checkbox.checked);
+          });
+        }
+      });
+    }
+
     function addLocationsToMap(locations) {
       locations.forEach((location) => {
+        const visited = isVisited(location.id);
         const marker = L.marker([location.lat, location.lng], {
-          icon: createLocationIcon(location.type),
+          icon: createLocationIcon(location.type, visited),
           title: location.name
         });
+
+        marker.bindPopup(() => buildPopupContent(location));
+        bindPopupEvents(marker);
+
         markerClusterGroup.addLayer(marker);
+        markersById.set(location.id, marker);
+        locationsById.set(location.id, location);
+      });
+    }
+
+    function groupLocationsByState(locations) {
+      const grouped = {};
+
+      locations.forEach((loc) => {
+        if (!grouped[loc.state]) {
+          grouped[loc.state] = { temples: [], universities: [] };
+        }
+        if (loc.type === 'temple') {
+          grouped[loc.state].temples.push(loc);
+        } else {
+          grouped[loc.state].universities.push(loc);
+        }
+      });
+
+      Object.values(grouped).forEach((stateGroup) => {
+        stateGroup.temples.sort((a, b) => a.name.localeCompare(b.name));
+        stateGroup.universities.sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      return grouped;
+    }
+
+    function renderChecklistItem(location) {
+      const visited = isVisited(location.id);
+      return `
+        <label class="checklist-item flex items-center gap-3 px-3 py-2.5 rounded-lg
+                      hover:bg-white/5 active:bg-white/10 cursor-pointer min-h-[44px]
+                      ${visited ? 'checklist-item--visited' : ''}">
+          <input type="checkbox" class="checklist-checkbox" data-location-id="${location.id}"
+                 ${visited ? 'checked' : ''}>
+          <span class="checklist-item__name text-sm text-white leading-snug">
+            ${escapeHtml(location.name)}
+          </span>
+        </label>
+      `;
+    }
+
+    function renderLocationList(locations) {
+      if (locations.length === 0) {
+        return '<p class="text-gray-500 text-sm text-center py-4">None in this state</p>';
+      }
+      return locations.map(renderChecklistItem).join('');
+    }
+
+    function buildChecklistDrawer(locations) {
+      const grouped = groupLocationsByState(locations);
+      const stateAbbrs = Object.keys(grouped).sort((a, b) => {
+        const nameA = STATE_ABBR_TO_NAME[a] || a;
+        const nameB = STATE_ABBR_TO_NAME[b] || b;
+        return nameA.localeCompare(nameB);
+      });
+
+      const html = stateAbbrs.map((abbr) => {
+        const stateName = STATE_ABBR_TO_NAME[abbr] || abbr;
+        const { temples, universities } = grouped[abbr];
+        const panelId = `state-panel-${abbr}`;
+        const tabId = `state-tabs-${abbr}`;
+
+        return `
+          <details class="state-accordion border-b border-white/10" data-state="${abbr}">
+            <summary class="flex items-center justify-between px-3 py-3 cursor-pointer
+                           text-white font-medium min-h-[44px] select-none
+                           hover:bg-white/5 active:bg-white/10 list-none">
+              <span>${escapeHtml(stateName)}</span>
+              <span class="text-xs text-gray-400 font-normal">
+                ${temples.length + universities.length} sites
+              </span>
+            </summary>
+            <div class="px-2 pb-3">
+              <div class="flex rounded-lg bg-gray-800 p-1 mb-2" role="tablist" id="${tabId}">
+                <button type="button" role="tab" aria-selected="true"
+                        class="state-tab flex-1 min-h-[40px] rounded-md text-sm font-medium
+                               text-white bg-gray-700 transition-colors"
+                        data-state="${abbr}" data-tab="temples">
+                  Temples (${temples.length})
+                </button>
+                <button type="button" role="tab" aria-selected="false"
+                        class="state-tab flex-1 min-h-[40px] rounded-md text-sm font-medium
+                               text-gray-400 transition-colors"
+                        data-state="${abbr}" data-tab="universities">
+                  Universities (${universities.length})
+                </button>
+              </div>
+              <div class="state-tab-panel" data-state="${abbr}" data-tab="temples" id="${panelId}-temples">
+                ${renderLocationList(temples)}
+              </div>
+              <div class="state-tab-panel hidden" data-state="${abbr}" data-tab="universities"
+                   id="${panelId}-universities">
+                ${renderLocationList(universities)}
+              </div>
+            </div>
+          </details>
+        `;
+      }).join('');
+
+      checklistContent.innerHTML = html || '<p class="text-gray-400 text-sm text-center py-8">No locations found.</p>';
+
+      checklistContent.querySelectorAll('.state-tab').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => {
+          const state = tabBtn.dataset.state;
+          const tab = tabBtn.dataset.tab;
+          const tablist = tabBtn.closest('[role="tablist"]');
+
+          tablist.querySelectorAll('.state-tab').forEach((btn) => {
+            const isActive = btn.dataset.tab === tab;
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            btn.classList.toggle('text-white', isActive);
+            btn.classList.toggle('bg-gray-700', isActive);
+            btn.classList.toggle('text-gray-400', !isActive);
+          });
+
+          const accordion = tabBtn.closest('.state-accordion');
+          accordion.querySelectorAll('.state-tab-panel').forEach((panel) => {
+            panel.classList.toggle('hidden', panel.dataset.tab !== tab);
+          });
+        });
+      });
+
+      checklistContent.querySelectorAll('.checklist-checkbox').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          setLocationVisited(checkbox.dataset.locationId, checkbox.checked);
+        });
       });
     }
 
@@ -274,14 +672,18 @@
       ]);
 
       const temples = parseTemplesFromKml(kmlText);
-      const allLocations = [...universities, ...temples];
+      allLocations = [...universities, ...temples];
 
       addLocationsToMap(allLocations);
+      buildChecklistDrawer(allLocations);
+      updateProgressBar();
+
       console.info(`Loaded ${temples.length} temples and ${universities.length} universities (${allLocations.length} total).`);
     }
 
     loadLocations().catch((error) => {
       console.error('Failed to load map data:', error);
+      checklistContent.innerHTML = '<p class="text-red-400 text-sm text-center py-8">Failed to load locations.</p>';
     });
   </script>
 </body>

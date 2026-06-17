@@ -98,18 +98,14 @@ Regardless of the original source format, all locations must be mapped into a un
 
 ## Current Sprint Goal
 
-Now, let's write the data fetching, KML parsing, and merging logic in `index.html`. 
-
-We need to fetch data from two local files when the app loads:
-1. JSON Data: Fetch `universities.json` as a standard JSON object.
-2. KML Data: Fetch the attached `ChurchofJesusChristTemples (1).kml` file as text.
+Let's add the mobile-first slide-up checklist drawer to track our progress.
 
 Requirements:
-1. Use `Promise.all` to load both datasets asynchronously.
-2. Parse the KML string using the browser's native `DOMParser()` to read it as an XML document. 
-3. Loop through each `<Placemark>` element in the KML file. Extract:
-   - The `<name>` text (e.g., "Yorba Linda California Temple").
-   - The `<coordinates>` text inside the `<Point>` element (Note: KML formats coordinates as `longitude,latitude,altitude`, so make sure to split them correctly and map longitude to `lng` and latitude to `lat`).
-   - Look inside the `<description>` text (which contains HTML/text) or use the name string to identify and ensure the location is in the United States. Extract or parse out a clean City and 2-letter State code if possible, or use a default if it's external.
-4. Normalize the temple items into matching objects: `{ id: "temple-" + index, name, type: "temple", city, state, lat, lng }`.
-5. Merge both arrays into one master list in memory, then add them all to a Leaflet `L.markerClusterGroup()`. Use a Gold/Yellow icon style for Temples and a Deep Blue icon style for Universities.
+1. Add a floating action button (list icon) in the bottom right corner of the screen to toggle the checklist panel.
+2. Inside the panel, group the locations by US State using an accordion layout (e.g., "Arizona", "Utah", "California") so the list is easily scannable on a phone.
+3. Inside each state section, split the view into two clean tabs: "Temples" and "Universities" listed alphabetically.
+4. Add large, touch-friendly checkboxes next to each location. Checking a box or clicking "Mark as Visited" in a map popup must:
+   - Persist the visited state using `localStorage` keyed by the location's unique ID.
+   - Instantly drop the map marker icon's opacity to 35% (or swap it to a gray icon) and refresh the cluster appearance.
+   - Strike through the item text in the checklist drawer.
+5. Add a master progress bar at the top of the interface showing total trip stats (e.g., "5 / 450 Sites Visited • 1.1%").
