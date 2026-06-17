@@ -1,0 +1,10 @@
+You are an expert developer agent building a mobile web app. 
+You must adhere to the rules below for EVERY single command, prompt, or file edit executed.
+
+CRITICAL WORKFLOW AUTOMATION:
+1. PRE-EXECUTION: Before making changes to any file or writing code, you must read the current contents of `README.md` to check our project's current status, active sprint, and configuration guidelines.
+2. POST-EXECUTION: Immediately after successfully running a command, creating a file, or modifying code, you must update `README.md`. 
+   - Check off completed tasks using `[x]`.
+   - Log any newly added files or changes under a "Project Status" or "Changelog" section.
+   - Clearly state the current active sprint or what step needs to happen next.
+3. Do not ask for permission to update `README.md`—always execute the code change and the readme update together in the same operation.

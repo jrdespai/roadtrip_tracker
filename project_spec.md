@@ -98,11 +98,18 @@ Regardless of the original source format, all locations must be mapped into a un
 
 ## Current Sprint Goal
 
-Create a single-file mobile web application named `index.html`. 
-Use Tailwind CSS via CDN for styling and Leaflet.js (OpenStreetMap) for a full-screen, highly responsive map.
+Now, let's write the data fetching, KML parsing, and merging logic in `index.html`. 
+
+We need to fetch data from two local files when the app loads:
+1. JSON Data: Fetch `universities.json` as a standard JSON object.
+2. KML Data: Fetch the attached `ChurchofJesusChristTemples (1).kml` file as text.
 
 Requirements:
-1. The map must occupy 100% of the mobile viewport height and width. Prevent default double-tap zooming using proper mobile viewport meta tags.
-2. Include the Leaflet.markercluster plugin CSS and JS via CDN links so we can smoothly handle thousands of interactive points across the country without performance lag.
-3. Center the map view over the continental United States (zoom level ~4) by default.
-4. Add a floating, semi-transparent header bar at the top that reads "US Road Trip Explorer".
+1. Use `Promise.all` to load both datasets asynchronously.
+2. Parse the KML string using the browser's native `DOMParser()` to read it as an XML document. 
+3. Loop through each `<Placemark>` element in the KML file. Extract:
+   - The `<name>` text (e.g., "Yorba Linda California Temple").
+   - The `<coordinates>` text inside the `<Point>` element (Note: KML formats coordinates as `longitude,latitude,altitude`, so make sure to split them correctly and map longitude to `lng` and latitude to `lat`).
+   - Look inside the `<description>` text (which contains HTML/text) or use the name string to identify and ensure the location is in the United States. Extract or parse out a clean City and 2-letter State code if possible, or use a default if it's external.
+4. Normalize the temple items into matching objects: `{ id: "temple-" + index, name, type: "temple", city, state, lat, lng }`.
+5. Merge both arrays into one master list in memory, then add them all to a Leaflet `L.markerClusterGroup()`. Use a Gold/Yellow icon style for Temples and a Deep Blue icon style for Universities.

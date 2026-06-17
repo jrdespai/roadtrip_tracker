@@ -13,10 +13,11 @@ Built as a zero-build, single-file web application — no Node.js compilation st
 - [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) wired up for high-performance rendering of hundreds of markers
 - Mobile-optimized viewport with double-click / double-tap zoom
 - Floating semi-transparent header bar
+- **`universities.json`** — 456 major US four-year universities (NCAA Division I + prominent regional institutions) across all 50 states and DC, with campus coordinates
 
 ### Planned
 
-- Temple and university markers parsed from static KML and JSON data files
+- Temple markers parsed from static KML data file
 - Gold temple pins and blue university pins with visited-state styling
 - Marker popups with Navigate and Mark as Visited actions
 - Slide-up checklist drawer grouped by state and type
@@ -50,9 +51,23 @@ Open [http://localhost:8765](http://localhost:8765) in your browser. For the bes
 roadtrip_tracker/
 ├── index.html                              # Application shell and map logic
 ├── project_spec.md                         # Full feature specification
-├── universities.json                       # (planned) US university database
+├── universities.json                       # US university database (456 entries)
+├── scripts/build_universities.py           # Regenerates universities.json from public sources
 └── ChurchofJesusChristTemples (1).kml      # (planned) Global temple KML source
 ```
+
+## Active Sprint
+
+**Current:** Wire up university markers on the map — load `universities.json`, render blue pins via marker cluster, and add popups with Navigate / Mark as Visited actions.
+
+## Changelog
+
+### 2026-06-16 — University data sprint (complete)
+
+- [x] Populate `universities.json` with 456 major four-year universities nationwide
+- [x] Include all NCAA Division I institutions (357) plus prominent regional supplements (Alaska system, Ivy/LAC schools, flagship branch campuses)
+- [x] Normalize schema: `id`, `name`, `type`, `city`, `state`, `lat`, `lng`
+- [x] Add `scripts/build_universities.py` to regenerate the dataset from [d1-atlas](https://github.com/Lowgy/d1-atlas) and [us-colleges](https://github.com/zicodeng/us-colleges) sources
 
 ## License
 
