@@ -14,12 +14,14 @@ Built as a zero-build, single-file web application — no Node.js compilation st
 - Mobile-optimized viewport with double-click / double-tap zoom
 - Floating semi-transparent header bar
 - **`universities.json`** — 456 major US four-year universities (NCAA Division I + prominent regional institutions) across all 50 states and DC, with campus coordinates
+- Async dual-source data loading via `Promise.all` (`universities.json` + temple KML)
+- KML parsing with native `DOMParser()` — US temples filtered and normalized at runtime
+- Gold temple pins and deep blue university pins on a shared marker cluster (~655 locations)
 
 ### Planned
 
-- Temple markers parsed from static KML data file
-- Gold temple pins and blue university pins with visited-state styling
 - Marker popups with Navigate and Mark as Visited actions
+- Visited-state marker styling
 - Slide-up checklist drawer grouped by state and type
 - Offline progress persistence via `localStorage`
 - Native Google Maps deep-link navigation
@@ -53,14 +55,22 @@ roadtrip_tracker/
 ├── project_spec.md                         # Full feature specification
 ├── universities.json                       # US university database (456 entries)
 ├── scripts/build_universities.py           # Regenerates universities.json from public sources
-└── ChurchofJesusChristTemples (1).kml      # (planned) Global temple KML source
+└── ChurchofJesusChristTemples (1).kml      # Global temple KML source (US entries parsed at runtime)
 ```
 
 ## Active Sprint
 
-**Current:** Wire up university markers on the map — load `universities.json`, render blue pins via marker cluster, and add popups with Navigate / Mark as Visited actions.
+**Current:** Add marker popups with Navigate and Mark as Visited actions, plus visited-state styling and `localStorage` persistence.
 
 ## Changelog
+
+### 2026-06-16 — Data loading & map markers sprint (complete)
+
+- [x] Load `universities.json` and `ChurchofJesusChristTemples (1).kml` concurrently with `Promise.all`
+- [x] Parse KML `<Placemark>` entries via `DOMParser()`, extract name/coordinates/description
+- [x] Filter to US temples only; normalize to unified location schema
+- [x] Merge universities + temples into one in-memory list
+- [x] Render gold temple pins and deep blue university pins on `L.markerClusterGroup()`
 
 ### 2026-06-16 — University data sprint (complete)
 
