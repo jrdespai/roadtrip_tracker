@@ -72,7 +72,12 @@
       min-width: 200px;
     }
 
-    .location-popup__nav-btn {
+    .location-popup__nav-btn,
+    .location-popup__nav-btn:link,
+    .location-popup__nav-btn:visited,
+    .location-popup__nav-btn:hover,
+    .location-popup__nav-btn:active,
+    .location-popup__nav-btn:focus {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -81,10 +86,14 @@
       margin-top: 10px;
       border-radius: 8px;
       background: #1e40af;
-      color: #fff;
+      color: #ffffff;
       font-weight: 600;
       font-size: 15px;
       text-decoration: none;
+    }
+
+    .leaflet-popup-content .location-popup__nav-btn {
+      color: #ffffff;
     }
 
     .location-popup__visited-label {
@@ -117,6 +126,61 @@
       accent-color: #f5c842;
     }
 
+    .checklist-nav-btn,
+    .checklist-nav-btn:link,
+    .checklist-nav-btn:visited,
+    .checklist-nav-btn:hover,
+    .checklist-nav-btn:active,
+    .checklist-nav-btn:focus {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: #1e40af;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .checklist-nav-btn:active {
+      background: #1e3a8a;
+      color: #ffffff;
+    }
+
+    #hide-visited-control {
+      pointer-events: auto;
+    }
+
+    .hide-visited-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 9999px;
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .hide-visited-toggle input {
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+      accent-color: #f5c842;
+      cursor: pointer;
+    }
+
     #checklist-drawer {
       transition: transform 0.3s ease;
     }
@@ -142,7 +206,7 @@
   <style>
     /* After Leaflet CSS so these rules win */
     #map .leaflet-top.leaflet-left {
-      top: calc(var(--header-height) + 0.5rem);
+      top: calc(var(--header-height) + 3.75rem);
     }
   </style>
 </head>
@@ -163,6 +227,16 @@
            style="width: 0%"></div>
     </div>
   </header>
+
+  <!-- Hide Visited toggle -->
+  <div id="hide-visited-control"
+       class="fixed left-0 right-0 z-[999] flex justify-center px-4 pointer-events-none"
+       style="top: calc(var(--header-height) + 0.5rem);">
+    <label class="hide-visited-toggle">
+      <input type="checkbox" id="hide-visited-toggle" aria-label="Hide visited locations on map">
+      Hide Visited
+    </label>
+  </div>
 
   <div id="map"></div>
 
@@ -192,7 +266,7 @@
     <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
       <h2 class="text-lg font-semibold text-white">Trip Checklist</h2>
       <button id="checklist-close" type="button" aria-label="Close checklist"
-              class="flex items-center justify-center w-11 h-11 rounded-full text-gray-300
+              class="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full text-gray-300
                      hover:bg-white/10 active:bg-white/20">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
              stroke="currentColor" stroke-width="2">
@@ -230,6 +304,7 @@
     const locationsById = new Map();
     const markersById = new Map();
     let allLocations = [];
+    let hideVisited = false;
 
     const map = L.map('map', {
       center: [39.8283, -98.5795],
@@ -262,12 +337,16 @@
     const checklistContent = document.getElementById('checklist-content');
     const progressStats = document.getElementById('progress-stats');
     const progressFill = document.getElementById('progress-fill');
+    const hideVisitedToggle = document.getElementById('hide-visited-toggle');
+    const hideVisitedControl = document.getElementById('hide-visited-control');
 
     function positionControlsBelowHeader() {
+      const headerHeight = document.getElementById('app-header').offsetHeight;
+      const hideControlHeight = hideVisitedControl.offsetHeight;
       const gap = 8;
-      const top = document.getElementById('app-header').offsetHeight + gap;
+      const leafletTop = headerHeight + hideControlHeight + gap * 2;
       document.querySelectorAll('#map .leaflet-top.leaflet-left').forEach((el) => {
-        el.style.top = `${top}px`;
+        el.style.top = `${leafletTop}px`;
       });
     }
 
@@ -306,6 +385,35 @@
       });
     }
 
+    function buildMapsUrl(lat, lng) {
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+
+    function shouldShowMarkerOnMap(id) {
+      return !hideVisited || !isVisited(id);
+    }
+
+    function syncMarkerVisibility(id) {
+      const marker = markersById.get(id);
+      if (!marker) {
+        return;
+      }
+      if (shouldShowMarkerOnMap(id)) {
+        if (!markerClusterGroup.hasLayer(marker)) {
+          markerClusterGroup.addLayer(marker);
+        }
+      } else if (markerClusterGroup.hasLayer(marker)) {
+        markerClusterGroup.removeLayer(marker);
+      }
+    }
+
+    function applyHideVisitedFilter() {
+      markersById.forEach((_marker, id) => {
+        syncMarkerVisibility(id);
+      });
+      markerClusterGroup.refreshClusters();
+    }
+
     function updateMarkerVisitedState(id, visited) {
       const location = locationsById.get(id);
       const marker = markersById.get(id);
@@ -313,7 +421,10 @@
         return;
       }
       marker.setIcon(createLocationIcon(location.type, visited));
-      markerClusterGroup.refreshClusters(marker);
+      syncMarkerVisibility(id);
+      if (markerClusterGroup.hasLayer(marker)) {
+        markerClusterGroup.refreshClusters(marker);
+      }
     }
 
     function setLocationVisited(id, visited) {
@@ -350,6 +461,11 @@
     });
     checklistClose.addEventListener('click', closeChecklistDrawer);
     drawerBackdrop.addEventListener('click', closeChecklistDrawer);
+
+    hideVisitedToggle.addEventListener('change', () => {
+      hideVisited = hideVisitedToggle.checked;
+      applyHideVisitedFilter();
+    });
 
     function getElementsByLocalName(parent, localName) {
       return Array.from(parent.getElementsByTagName('*')).filter(
@@ -471,7 +587,7 @@
 
     function buildPopupContent(location) {
       const visited = isVisited(location.id);
-      const navUrl = `http://maps.google.com/?q=${location.lat},${location.lng}`;
+      const navUrl = buildMapsUrl(location.lat, location.lng);
       return `
         <div class="location-popup">
           <strong class="text-base text-gray-900">${escapeHtml(location.name)}</strong>
@@ -479,7 +595,7 @@
             ${escapeHtml(formatTypeLabel(location.type))} &middot;
             ${escapeHtml(location.city)}, ${escapeHtml(location.state)}
           </p>
-          <a class="location-popup__nav-btn" href="${navUrl}" target="_blank" rel="noopener noreferrer">
+          <a class="location-popup__nav-btn text-white" href="${navUrl}" target="_blank" rel="noopener noreferrer">
             Navigate
           </a>
           <label class="location-popup__visited-label">
@@ -552,16 +668,23 @@
 
     function renderChecklistItem(location) {
       const visited = isVisited(location.id);
+      const navUrl = buildMapsUrl(location.lat, location.lng);
       return `
-        <label class="checklist-item flex items-center gap-3 px-3 py-2.5 rounded-lg
-                      hover:bg-white/5 active:bg-white/10 cursor-pointer min-h-[44px]
-                      ${visited ? 'checklist-item--visited' : ''}">
-          <input type="checkbox" class="checklist-checkbox" data-location-id="${location.id}"
-                 ${visited ? 'checked' : ''}>
-          <span class="checklist-item__name text-sm text-white leading-snug">
-            ${escapeHtml(location.name)}
-          </span>
-        </label>
+        <div class="checklist-item flex items-center gap-2 px-2 py-1 rounded-lg
+                    hover:bg-white/5 min-h-[44px]
+                    ${visited ? 'checklist-item--visited' : ''}">
+          <label class="flex items-center gap-3 flex-1 min-h-[44px] px-1 cursor-pointer">
+            <input type="checkbox" class="checklist-checkbox" data-location-id="${location.id}"
+                   ${visited ? 'checked' : ''}>
+            <span class="checklist-item__name text-sm text-white leading-snug">
+              ${escapeHtml(location.name)}
+            </span>
+          </label>
+          <a class="checklist-nav-btn text-white" href="${navUrl}" target="_blank" rel="noopener noreferrer"
+             aria-label="Navigate to ${escapeHtml(location.name)}">
+            Navigate
+          </a>
+        </div>
       `;
     }
 
@@ -588,7 +711,7 @@
 
         return `
           <details class="state-accordion border-b border-white/10" data-state="${abbr}">
-            <summary class="flex items-center justify-between px-3 py-3 cursor-pointer
+            <summary class="flex items-center justify-between px-3 py-2 cursor-pointer
                            text-white font-medium min-h-[44px] select-none
                            hover:bg-white/5 active:bg-white/10 list-none">
               <span>${escapeHtml(stateName)}</span>
@@ -599,13 +722,13 @@
             <div class="px-2 pb-3">
               <div class="flex rounded-lg bg-gray-800 p-1 mb-2" role="tablist" id="${tabId}">
                 <button type="button" role="tab" aria-selected="true"
-                        class="state-tab flex-1 min-h-[40px] rounded-md text-sm font-medium
+                        class="state-tab flex-1 min-h-[44px] rounded-md text-sm font-medium
                                text-white bg-gray-700 transition-colors"
                         data-state="${abbr}" data-tab="temples">
                   Temples (${temples.length})
                 </button>
                 <button type="button" role="tab" aria-selected="false"
-                        class="state-tab flex-1 min-h-[40px] rounded-md text-sm font-medium
+                        class="state-tab flex-1 min-h-[44px] rounded-md text-sm font-medium
                                text-gray-400 transition-colors"
                         data-state="${abbr}" data-tab="universities">
                   Universities (${universities.length})

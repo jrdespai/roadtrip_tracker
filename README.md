@@ -17,15 +17,16 @@ Built as a zero-build, single-file web application — no Node.js compilation st
 - Async dual-source data loading via `Promise.all` (`universities.json` + temple KML)
 - KML parsing with native `DOMParser()` — US temples filtered and normalized at runtime
 - Gold temple pins and deep blue university pins on a shared marker cluster (~655 locations)
-- Marker popups with location details, native Google Maps **Navigate** deep link, and **Mark as Visited** toggle
+- Marker popups with location details, native Google Maps **Navigate** deep link (`google.com/maps/search/?api=1`), and **Mark as Visited** toggle
 - Visited markers fade to light gray at 35% opacity; cluster appearance refreshes instantly
-- Slide-up checklist drawer (FAB toggle) with state accordions and Temples/Universities tabs
+- **Hide Visited** floating toggle removes visited markers from the map cluster for a cleaner road-ahead view
+- Slide-up checklist drawer (FAB toggle) with state accordions, Temples/Universities tabs, and per-location **Navigate** buttons
 - Two-way sync between map popups and checklist checkboxes
 - Offline progress persistence via `localStorage` keyed by each location's unique ID
+- 44×44px minimum touch targets on all buttons, checkboxes, tabs, and accordion headers
 
 ### Planned
 
-- Filter/hide visited markers from viewport (optional view mode)
 - Search or jump-to-state shortcuts in the checklist drawer
 
 See [project_spec.md](project_spec.md) for the full specification.
@@ -62,9 +63,20 @@ roadtrip_tracker/
 
 ## Active Sprint
 
-**Current:** Sprint complete — checklist drawer, visited-state tracking, popups, and `localStorage` persistence are live. Next up: optional visited-marker filtering and checklist search/navigation enhancements.
+**Current:** Road trip tools sprint complete — native Google Maps navigation, Hide Visited map filter, and 44px touch targets are live. Next up: checklist search and jump-to-state shortcuts.
 
 ## Changelog
+
+### 2026-06-16 — Navigate button contrast fix
+
+- [x] Force white text on popup and checklist **Navigate** buttons (overrides Leaflet link color)
+
+### 2026-06-16 — Road trip tools & touch targets sprint (complete)
+
+- [x] **Navigate** buttons in map popups and checklist rows open native Google Maps via `https://www.google.com/maps/search/?api=1&query={lat},{lng}`
+- [x] Floating **Hide Visited** toggle at top of map removes visited markers from the cluster group
+- [x] Visited/unvisited changes sync instantly with Hide Visited filter (markers appear or disappear on toggle)
+- [x] 44×44px minimum tap targets on Navigate buttons, checkboxes, tabs, accordion headers, FAB, and drawer close
 
 ### 2026-06-16 — Checklist drawer & progress tracking sprint (complete)
 
@@ -77,7 +89,7 @@ roadtrip_tracker/
 - [x] `localStorage` persistence keyed by location ID survives page reloads
 - [x] Visited markers switch to faded gray (35% opacity) with cluster refresh
 - [x] Strikethrough styling on visited items in the checklist drawer
-- [x] Marker popups with Navigate CTA (`maps.google.com/?q=lat,lng` deep link)
+- [x] Marker popups with Navigate CTA (Google Maps native deep link)
 
 ### 2026-06-16 — Data loading & map markers sprint (complete)
 

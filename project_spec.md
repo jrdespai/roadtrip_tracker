@@ -98,14 +98,10 @@ Regardless of the original source format, all locations must be mapped into a un
 
 ## Current Sprint Goal
 
-Let's add the mobile-first slide-up checklist drawer to track our progress.
+Let's complete the app with crucial road trip tools and touch target optimizations.
 
 Requirements:
-1. Add a floating action button (list icon) in the bottom right corner of the screen to toggle the checklist panel.
-2. Inside the panel, group the locations by US State using an accordion layout (e.g., "Arizona", "Utah", "California") so the list is easily scannable on a phone.
-3. Inside each state section, split the view into two clean tabs: "Temples" and "Universities" listed alphabetically.
-4. Add large, touch-friendly checkboxes next to each location. Checking a box or clicking "Mark as Visited" in a map popup must:
-   - Persist the visited state using `localStorage` keyed by the location's unique ID.
-   - Instantly drop the map marker icon's opacity to 35% (or swap it to a gray icon) and refresh the cluster appearance.
-   - Strike through the item text in the checklist drawer.
-5. Add a master progress bar at the top of the interface showing total trip stats (e.g., "5 / 450 Sites Visited • 1.1%").
+1. Inside both the map popups and the checklist views, add a prominent "Navigate" button next to each location.
+2. Configure this button to open a native mapping intent URL scheme: `https://www.google.com/maps/search/?api=1&query={lat},{lng}`. Tapping this on iOS or Android will smoothly jump the user directly into the native Google Maps app for turn-by-turn driving directions instead of keeping them in the browser.
+3. Add a floating toggle switch at the top of the map layout: "Hide Visited". When enabled, temporarily remove all visited markers from the map cluster group to keep the visual map clean and focused entirely on the road ahead.
+4. Ensure all interactive buttons, checkboxes, and tabs have a minimum padding target of 44x44 pixels to easily account for bumps while riding in a moving vehicle.
